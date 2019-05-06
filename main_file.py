@@ -7,7 +7,7 @@ import pandas as pd
 import re
 import sys
 from moviepy.video.io.VideoFileClip import VideoFileClip
-import time
+
 
 
 def select_folder():
@@ -15,6 +15,7 @@ def select_folder():
     folder_names = list(folders_data['Folder_Name'])
     folder_paths = list(folders_data['Folder_path'])
 
+    # print music folders to choose where to play from or random folder select choice or ask for enter folder path
     ind = 0
     for index, row in folders_data.iterrows():
         ind = index + 1
@@ -58,10 +59,10 @@ def select_folder():
 def play_music(folder_path, song_list):  # play random songs from the directory
     while True:
         try:
-            now_playing_song = random.choice(song_list)
+            now_playing_song = random.choice(song_list)     # shuffle play
             song_name_length = len(now_playing_song)
         except IndexError:
-            print('No more songs to play..')
+            print('No more songs to play..')    # if no songs are there is folder or all songs are already played
             break
 
         print('\nCurrently playing '
@@ -72,31 +73,37 @@ def play_music(folder_path, song_list):  # play random songs from the directory
                       now_playing_song[:-4],
                       '-' * song_name_length))
 
+        # song_file_location stores complete path of a song
         song_file_location = "{}\{}".format(folder_path, now_playing_song)
 
+        # video duration is used as timeout
         video_duration = get_file_duration(song_file_location)
         print('waiting for ' + str(video_duration) + 'sec')
-        #os.system('"' + song_file_location + '"')
+
+        # used for subprocess timeout implementation
         p = subprocess.Popen([r"C:\Program Files\VideoLAN\VLC\vlc.exe", song_file_location])
         try:
-            p.wait(video_duration)
+            p.wait(video_duration)      # if media player is closed by the user starts playing next music
         except subprocess.TimeoutExpired:
-            p.kill()
+            p.kill()                    # wait till audio/video playing is completed and start next playing next music
 
+        # removing songs from list to avoid repetition
         song_list.remove(now_playing_song)
         print(str(len(song_list)) + ' songs remaining')
 
 
-def get_file_duration(video_file):
+def get_file_duration(video_file):      # returns video duration in seconds of video file currently playing
     clip = VideoFileClip(video_file)
     return clip.duration
 
 
 def make_song_list(folder_path):
+    # regular expression to match all types of file formats supported by VLC media player
     pattern = '.{0,}\.(avi|mkv|mp4|wmv|mov|flv|ogm|vob|dat|ogg|asf|m1v|m2v|mp3|aac|flac|wma|rma)'
-    all_files_list = os.listdir(folder_path)
-    valid_music_files = []
-    invalid_music_files = []
+
+    all_files_list = os.listdir(folder_path)    # stores list of all files in the folder
+    valid_music_files = []                      # stores list of only music files which are playable in the folder
+    invalid_music_files = []                    # stores list of files which are not playable
 
     for i in range(len(all_files_list)):
         if re.match(pattern, all_files_list[i]):
@@ -104,8 +111,8 @@ def make_song_list(folder_path):
         else:
             invalid_music_files.append(all_files_list[i])
 
-    no_all_files = len(all_files_list)
-    no_music_files = len(valid_music_files)
+    no_all_files = len(all_files_list)          # total files in the folder
+    no_music_files = len(valid_music_files)     # no of songs in the folder
 
     if no_all_files == no_music_files:
         print('\n' + str(no_music_files) + ' Songs ')
@@ -127,6 +134,6 @@ def count_digit(n):
 
 
 if __name__ == '__main__':
-    folder_path = select_folder()  # selects a folder to play songs from
-    song_list = make_song_list(folder_path)  # get the list of all songs in a directory
-    play_music(folder_path, song_list)
+    folder_path = select_folder()               # selects a folder to play songs from
+    song_list = make_song_list(folder_path)     # list of all songs in a folder
+    play_music(folder_path, song_list)          # plays music in shuffle from the folder selected
