@@ -1,11 +1,13 @@
 
 # @author swapmali
-
+import subprocess
 import os
 import random
 import pandas as pd
 import re
 import sys
+from moviepy.video.io.VideoFileClip import VideoFileClip
+import time
 
 
 def select_folder():
@@ -23,7 +25,7 @@ def select_folder():
     print(str(ind) + '. ' + 'Enter manually New Folder path')
 
     try:
-        choice = int(input('Enter your choice no: '))
+        choice = int(input('\nEnter your choice no: '))
         if 0 < choice <= (ind - 2):
             selected_folder_name = folder_names[choice - 1]
             print('\nPlaying from Folder '
@@ -71,10 +73,23 @@ def play_music(folder_path, song_list):  # play random songs from the directory
                       '-' * song_name_length))
 
         song_file_location = "{}\{}".format(folder_path, now_playing_song)
-        os.system('"' + song_file_location + '"')
+
+        video_duration = get_file_duration(song_file_location)
+        print('waiting for ' + str(video_duration) + 'sec')
+        #os.system('"' + song_file_location + '"')
+        p = subprocess.Popen([r"C:\Program Files\VideoLAN\VLC\vlc.exe", song_file_location])
+        try:
+            p.wait(video_duration)
+        except subprocess.TimeoutExpired:
+            p.kill()
 
         song_list.remove(now_playing_song)
         print(str(len(song_list)) + ' songs remaining')
+
+
+def get_file_duration(video_file):
+    clip = VideoFileClip(video_file)
+    return clip.duration
 
 
 def make_song_list(folder_path):
