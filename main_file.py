@@ -1,5 +1,5 @@
-
 # @author swapmali
+
 import subprocess
 import os
 import random
@@ -7,7 +7,7 @@ import pandas as pd
 import re
 import sys
 from moviepy.video.io.VideoFileClip import VideoFileClip
-
+import time
 
 
 def select_folder():
@@ -65,7 +65,7 @@ def play_music(folder_path, song_list):  # play random songs from the directory
             print('No more songs to play..')    # if no songs are there is folder or all songs are already played
             break
 
-        print('\nCurrently playing '
+        print('\nNow playing '
               '\n{}'
               '\n: {}'
               '\n{}'
@@ -78,23 +78,25 @@ def play_music(folder_path, song_list):  # play random songs from the directory
 
         # video duration is used as timeout
         video_duration = get_file_duration(song_file_location)
-        print('waiting for ' + str(video_duration) + 'sec')
+        # print('waiting for ' + str(video_duration) + 'sec')
 
-        # used for subprocess timeout implementation
+        # Main part which plays music, subprocess with timeout implementation
         p = subprocess.Popen([r"C:\Program Files\VideoLAN\VLC\vlc.exe", song_file_location])
-        try:
-            p.wait(video_duration)      # if media player is closed by the user starts playing next music
-        except subprocess.TimeoutExpired:
-            p.kill()                    # wait till audio/video playing is completed and start next playing next music
-
-        # removing songs from list to avoid repetition
         song_list.remove(now_playing_song)
-        print(str(len(song_list)) + ' songs remaining')
+        print('\nPlaylist : ' + str(len(song_list)) + ' songs      ', end='')
+        print(str(get_playlist_time(folder_path, song_list)))
+        try:
+            p.wait(video_duration - 4)      # if media player is closed by the user starts playing next music
+        except subprocess.TimeoutExpired:
+            p.kill()                        # wait till audio/video playing is completed and start next playing next music
 
 
-def get_file_duration(video_file):      # returns video duration in seconds of video file currently playing
-    clip = VideoFileClip(video_file)
-    return clip.duration
+def get_file_duration(song_file_location):      # returns video duration in seconds of video file currently playing
+    clip = VideoFileClip(song_file_location)
+    video_duration = clip.duration
+    clip.reader.close()
+    clip.audio.reader.close_proc()
+    return video_duration
 
 
 def make_song_list(folder_path):
@@ -123,6 +125,19 @@ def make_song_list(folder_path):
               '\n' + '=' * (13 + count_digit(no_all_files)))
 
     return valid_music_files
+
+
+def get_playlist_time(folder_path, song_list):
+    total_time = 0
+    # print('\nCalculating Total Playlist time..Please wait')
+    for i in range(len(song_list)):
+        song_file_location = "{}\{}".format(folder_path, song_list[i])
+        clip = VideoFileClip(song_file_location)
+        total_time += clip.duration
+        clip.reader.close()
+        clip.audio.reader.close_proc()
+    formatted_time = time.strftime('%Hhr %Mmin %Ssec', time.gmtime(total_time))
+    return formatted_time
 
 
 def count_digit(n):
